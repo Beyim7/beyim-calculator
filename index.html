@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>BEYIM — Calculator</title>
+<style>
+  :root{
+    --blue:#2f8fef;
+    --blue-dark:#1f6fd1;
+    --bg-dark:#0c1016;
+    --card-dark:#12161f;
+    --key-dark:#1a1f2b;
+    --key-dark-fn:#161b25;
+    --text-dark:#eef2f8;
+    --sub-dark:#7b8496;
+
+    --bg-light:#dbe6f2;
+    --card-light:rgba(255,255,255,0.55);
+    --key-light:rgba(255,255,255,0.55);
+    --key-light-fn:rgba(255,255,255,0.35);
+    --text-light:#12161f;
+    --sub-light:#5a6478;
+
+    --radius-card:32px;
+    --radius-key:18px;
+  }
+
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; touch-action:manipulation;}
+  html,body{height:100%; -webkit-text-size-adjust:100%;}
+  body{
+    margin:0;
+    font-family:'Inter','Segoe UI',system-ui,-apple-system,sans-serif;
+    background:radial-gradient(circle at 50% 20%, #163a63 0%, var(--bg-dark) 60%);
+    color:var(--text-dark);
+    min-height:100vh;
+    min-height:100dvh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    padding-top:max(20px, env(safe-area-inset-top));
+    padding-bottom:max(20px, env(safe-area-inset-bottom));
+    overflow-x:hidden;
+    overscroll-behavior:none;
+    transition:background .4s ease;
+  }
+  body.light{
+    background:radial-gradient(circle at 50% 15%, #cfe0f4 0%, var(--bg-light) 65%);
+    color:var(--text-light);
+  }
+
+  .app{
+    width:100%;
+    max-width:400px;
+  }
+
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 6px 14px;
+  }
+  .brand{
+    font-weight:700;
+    font-size:20px;
+    letter-spacing:1.5px;
+  }
+  .brand span{color:var(--blue);}
+  .icon-btn{
+    width:40px; height:40px;
+    border-radius:12px;
+    border:none;
+    background:var(--key-dark-fn);
+    color:var(--sub-dark);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    font-size:16px;
+    transition:background .2s, color .2s, transform .1s;
+  }
+  body.light .icon-btn{background:var(--key-light-fn); color:var(--sub-light);}
+  .icon-btn:active{transform:scale(0.92);}
+
+  .card{
+    background:var(--card-dark);
+    border-radius:var(--radius-card);
+    padding:20px 16px 22px;
+    box-shadow:0 30px 60px -20px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.03);
+    border:1px solid rgba(255,255,255,0.05);
+    backdrop-filter:blur(20px);
+    transition:background .4s ease;
+  }
+  body.light .card{
+    background:var(--card-light);
+    box-shadow:0 30px 60px -25px rgba(30,60,110,0.35), inset 0 1px 0 rgba(255,255,255,0.6);
+    border:1px solid rgba(255,255,255,0.6);
+  }
+
+  .display{
+    padding:16px 10px 18px;
+    text-align:right;
+    min-height:110px;
+    display:flex;
+    flex-direction:column;
+    justify-content:flex-end;
+    gap:8px;
+  }
+  .expr{
+    font-size:15px;
+    color:var(--sub-dark);
+    white-space:nowrap;
+    overflow-x:auto;
+    scrollbar-width:none;
+    min-height:20px;
+  }
+  body.light .expr{color:var(--sub-light);}
+  .expr::-webkit-scrollbar{display:none;}
+  .result{
+    font-size:46px;
+    font-weight:600;
+    white-space:nowrap;
+    overflow-x:auto;
+    scrollbar-width:none;
+    letter-spacing:.5px;
+  }
+  .result::-webkit-scrollbar{display:none;}
+  .result.error{color:#ff6b6b; font-size:24px;}
+
+  .keys{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:10px;
+  }
+  .key{
+    position:relative;
+    border:none;
+    border-radius:var(--radius-key);
+    padding:0;
+    height:64px;
+    font-size:22px;
+    font-weight:500;
+    color:var(--text-dark);
+    background:var(--key-dark);
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:transform .08s ease, background .15s ease, filter .15s ease;
+    user-select:none;
+  }
+  body.light .key{background:var(--key-light); color:var(--text-light);}
+  .key:active{transform:scale(0.94);}
+  .key.fn{
+    background:var(--key-dark-fn);
+    color:var(--blue);
+    font-size:20px;
+    font-weight:600;
+  }
+  body.light .key.fn{background:var(--key-light-fn); color:var(--blue-dark);}
+  .key.op{
+    background:var(--key-dark-fn);
+    color:var(--blue);
+    font-size:24px;
+  }
+  body.light .key.op{background:var(--key-light-fn); color:var(--blue-dark);}
+  .key.zero{grid-column:span 2; justify-content:center; padding-left:0;}
+
+  .key.eq-wide{
+    width:100%;
+    height:64px;
+    border:none;
+    border-radius:22px;
+    background:linear-gradient(145deg,var(--blue),var(--blue-dark));
+    color:#fff;
+    font-size:26px;
+    font-weight:700;
+    letter-spacing:1px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    box-shadow:0 10px 24px -6px rgba(47,143,239,0.65), inset 0 1px 0 rgba(255,255,255,0.25);
+    transition:transform .08s ease, filter .15s ease;
+  }
+  .key.eq-wide:active{
+    transform:scale(0.97);
+    filter:brightness(0.9);
+  }
+
+  @media (max-width:380px){
+    .key{height:56px; font-size:20px;}
+    .result{font-size:38px;}
+  }
+  @media (max-height:640px){
+    .display{min-height:80px; padding-bottom:10px;}
+    .key{height:52px;}
+    .keys{gap:8px;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="brand">BEY<span>IM</span></div>
+    <button class="icon-btn" id="themeBtn" title="Toggle theme">🌙</button>
+  </div>
+
+  <div class="card">
+    <div class="display" id="displayArea">
+      <div class="expr" id="exprEl">0</div>
+      <div class="result" id="resultEl">0</div>
+    </div>
+
+    <div class="keys">
+      <button class="key fn" data-act="ac">AC</button>
+      <button class="key fn" data-act="sign">±</button>
+      <button class="key fn" data-act="percent">%</button>
+      <button class="key op" data-act="del">⌫</button>
+
+      <button class="key" data-ins="7">7</button>
+      <button class="key" data-ins="8">8</button>
+      <button class="key" data-ins="9">9</button>
+      <button class="key op" data-op="/">÷</button>
+
+      <button class="key" data-ins="4">4</button>
+      <button class="key" data-ins="5">5</button>
+      <button class="key" data-ins="6">6</button>
+      <button class="key op" data-op="*">×</button>
+
+      <button class="key" data-ins="1">1</button>
+      <button class="key" data-ins="2">2</button>
+      <button class="key" data-ins="3">3</button>
+      <button class="key op" data-op="-">−</button>
+
+      <button class="key zero" data-ins="0">0</button>
+      <button class="key" data-ins=".">.</button>
+      <button class="key op" data-op="+">+</button>
+    </div>
+    <div class="keys" style="grid-template-columns:1fr; margin-top:10px;">
+      <button class="key eq-wide" data-act="eq">=</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const exprEl = document.getElementById('exprEl');
+  const resultEl = document.getElementById('resultEl');
+  const themeBtn = document.getElementById('themeBtn');
+
+  let expr = '';
+  let justEvaluated = false;
+
+  themeBtn.addEventListener('click', () => {
+    document.body.classList.toggle('light');
+    themeBtn.textContent = document.body.classList.contains('light') ? '☀️' : '🌙';
+  });
+
+  function displayExpr(){
+    return expr.replace(/\*/g,'×').replace(/\//g,'÷') || '0';
+  }
+
+  function updateDisplay(){
+    exprEl.textContent = displayExpr();
+    resultEl.classList.remove('error');
+    if(expr.trim() === ''){
+      resultEl.textContent = '0';
+      return;
+    }
+    try{
+      const val = evaluateExpr(expr);
+      resultEl.textContent = formatNumber(val);
+    }catch(e){
+      resultEl.textContent = expr === '' ? '0' : '';
+    }
+  }
+
+  function formatNumber(n){
+    if(typeof n !== 'number' || !isFinite(n)) return 'Error';
+    if(Math.abs(n) > 1e15 || (Math.abs(n) < 1e-9 && n !== 0)){
+      return n.toExponential(6).replace(/e\+?/,'e');
+    }
+    let rounded = Math.round(n * 1e10) / 1e10;
+    let str = rounded.toString();
+    if(str.includes('.')){
+      let [intPart, decPart] = str.split('.');
+      intPart = Number(intPart).toLocaleString('en-US');
+      return intPart + '.' + decPart;
+    }
+    return Number(str).toLocaleString('en-US');
+  }
+
+  document.querySelectorAll('.key').forEach(btn=>{
+    btn.addEventListener('click', ()=> handleKey(btn));
+  });
+
+  function handleKey(btn){
+    const ins = btn.dataset.ins;
+    const op = btn.dataset.op;
+    const act = btn.dataset.act;
+
+    if(ins !== undefined){
+      if(justEvaluated){ expr = ''; justEvaluated = false; }
+      expr += ins;
+      updateDisplay();
+      return;
+    }
+
+    if(op !== undefined){
+      justEvaluated = false;
+      expr += op;
+      updateDisplay();
+      return;
+    }
+
+    switch(act){
+      case 'ac':
+        expr = '';
+        justEvaluated = false;
+        updateDisplay();
+        break;
+      case 'del':
+        expr = expr.slice(0,-1);
+        justEvaluated = false;
+        updateDisplay();
+        break;
+      case 'percent':
+        expr += '%';
+        justEvaluated = false;
+        updateDisplay();
+        break;
+      case 'sign':
+        toggleSign();
+        break;
+      case 'eq':
+        doEquals();
+        break;
+    }
+  }
+
+  function toggleSign(){
+    const match = expr.match(/(-?\d+\.?\d*)$/);
+    if(!match) return;
+    const num = match[1];
+    const start = expr.length - num.length;
+    const flipped = num.startsWith('-') ? num.slice(1) : '-' + num;
+    expr = expr.slice(0, start) + flipped;
+    updateDisplay();
+  }
+
+  function doEquals(){
+    if(expr.trim() === '') return;
+    try{
+      const val = evaluateExpr(expr);
+      const formatted = formatNumber(val);
+      exprEl.textContent = displayExpr() + ' =';
+      resultEl.textContent = formatted;
+      resultEl.classList.remove('error');
+      expr = String(val);
+      justEvaluated = true;
+    }catch(e){
+      resultEl.textContent = 'Error';
+      resultEl.classList.add('error');
+    }
+  }
+
+  window.addEventListener('keydown', (e)=>{
+    const k = e.key;
+    if(/^[0-9.]$/.test(k)){
+      if(justEvaluated){ expr=''; justEvaluated=false; }
+      expr += k; updateDisplay(); return;
+    }
+    if(['+','-','*','/','%'].includes(k)){
+      justEvaluated=false;
+      expr += k; updateDisplay(); return;
+    }
+    if(k === 'Enter' || k === '='){
+      e.preventDefault();
+      doEquals();
+      return;
+    }
+    if(k === 'Backspace'){
+      expr = expr.slice(0,-1);
+      justEvaluated=false;
+      updateDisplay();
+      return;
+    }
+    if(k === 'Escape'){
+      expr=''; justEvaluated=false; updateDisplay();
+      return;
+    }
+  });
+
+  function evaluateExpr(input){
+    let s = input.trim();
+    if(s === '') throw new Error('empty');
+    s = s.replace(/(-?\d+(\.\d+)?)%/g, '($1/100)');
+    const tokens = tokenize(s);
+    const parser = new Parser(tokens);
+    const result = parser.parseExpression();
+    if(!parser.atEnd()) throw new Error('Unexpected token');
+    return result;
+  }
+
+  function tokenize(s){
+    const tokens = [];
+    let i = 0;
+    while(i < s.length){
+      const c = s[i];
+      if(/\s/.test(c)){ i++; continue; }
+      if(/[0-9.]/.test(c)){
+        let j = i;
+        while(j < s.length && /[0-9.]/.test(s[j])) j++;
+        tokens.push({type:'num', value: parseFloat(s.slice(i,j))});
+        i = j;
+        continue;
+      }
+      if('+-*/()'.includes(c)){
+        tokens.push({type:(c==='('||c===')')?'paren':'op', value:c});
+        i++;
+        continue;
+      }
+      throw new Error('Bad char: '+c);
+    }
+    return tokens;
+  }
+
+  class Parser{
+    constructor(tokens){ this.tokens = tokens; this.pos = 0; }
+    peek(){ return this.tokens[this.pos]; }
+    next(){ return this.tokens[this.pos++]; }
+    atEnd(){ return this.pos >= this.tokens.length; }
+
+    parseExpression(){ return this.parseAddSub(); }
+
+    parseAddSub(){
+      let left = this.parseMulDiv();
+      while(!this.atEnd()){
+        const t = this.peek();
+        if(t.type==='op' && (t.value==='+' || t.value==='-')){
+          this.next();
+          const right = this.parseMulDiv();
+          left = t.value==='+' ? left+right : left-right;
+        } else break;
+      }
+      return left;
+    }
+
+    parseMulDiv(){
+      let left = this.parseUnary();
+      while(!this.atEnd()){
+        const t = this.peek();
+        if(t.type==='op' && (t.value==='*' || t.value==='/')){
+          this.next();
+          const right = this.parseUnary();
+          if(t.value==='*') left = left*right;
+          else { if(right===0) throw new Error('Div0'); left = left/right; }
+        } else if(t.type==='num' || (t.type==='paren'&&t.value==='(')){
+          const right = this.parseUnary();
+          left = left*right;
+        } else break;
+      }
+      return left;
+    }
+
+    parseUnary(){
+      const t = this.peek();
+      if(t && t.type==='op' && t.value==='-'){
+        this.next();
+        return -this.parseUnary();
+      }
+      if(t && t.type==='op' && t.value==='+'){
+        this.next();
+        return this.parseUnary();
+      }
+      return this.parseAtom();
+    }
+
+    parseAtom(){
+      const t = this.next();
+      if(!t) throw new Error('Unexpected end');
+      if(t.type==='num') return t.value;
+      if(t.type==='paren' && t.value==='('){
+        const v = this.parseExpression();
+        const close = this.next();
+        if(!close || close.value !== ')') throw new Error('Expected )');
+        return v;
+      }
+      throw new Error('Unexpected token: '+JSON.stringify(t));
+    }
+  }
+
+  updateDisplay();
+})();
+</script>
+</body>
+</html>
